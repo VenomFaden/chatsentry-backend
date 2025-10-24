@@ -1,0 +1,91 @@
+import express from 'express';
+import http from 'http';
+import path from 'path';
+import { Server as IOServer } from 'socket.io';
+import { Chat } from './components/chat/chat';
+
+const app = express();
+const server = http.createServer(app);
+const io = new IOServer(server, { cors: { origin: '*' } });
+
+// Serve the static frontend
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+io.on('connection', (socket) => {
+    console.log('Frontend connected:', socket.id);
+
+    // 1. Her bağlanan socket için YENİ, ÖZEL bir chat objesi oluştur
+    const chat = new Chat();
+
+    // 2. Bu öze chat objesinin olaylarını SADECE bu socket'e yönlendir
+    chat.onMessage = (data) => {
+        // io.emit yerine socket.emit kullanarak SADECE bu istemciye gönder
+        socket.emit('message', data); // <-- DEĞİŞİKLİK
+        console.log(`Socket ${socket.id} için mesaj iletildi:`, data);
+    };
+
+    chat.onConnectionStatus = (status, error?) => {
+        // io.emit yerine socket.emit kullanarak SADECE bu istemciye gönder
+        socket.emit('status', { status, error }); // <-- DEĞİSİKLİK
+        console.log(`Socket ${socket.id} için bağlantı durumu:`, status, error || '');
+    };
+
+    // 3. İstemcinin "send" olayı bu öze chat objesini kullanır
+    socket.on('send', (msg) => {
+        const payload = typeof msg === 'string' ? msg : JSON.stringify(msg);
+        // Bu socket'in kendi chat objesine mesaj gönderir
+        const ok = chat.sendMessage(payload);
+        socket.emit('send_status', { ok });
+    });
+
+    // 4. İstemci hangi URL'e bağlanacağını söylediğinde bu özel chat'i bağla
+    socket.on('set_ws_url', (url: string) => {
+        try {
+            // Bu socket'in kendi chat objesini istemcinin verdiği URL'e bağla
+            chat.connect(url);
+            socket.emit('set_ws_url', { ok: true });
+        } catch (e) {
+            socket.emit('set_ws_url', { ok: false, error: String(e) });
+        }
+    });
+
+    // 5. İstemcinin bağlantısı koptuğunda, bu öze chat objesini de kapat
+    socket.on('disconnect', () => {
+        console.log('Frontend disconnected:', socket.id);
+        chat.close()
+        // !! ÇOK ÖNEMLİ: Kaynak sızıntısını önlemek için bu chat'in bağlantısını kes
+        // Not: .disconnect() metodunun adının bu olduğunu varsayıyorum.
+        // Sizin Chat sınıfınızda bu metodun adı farklıysa (örn: .close()) onu kullanın.
+
+    });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+const PORT = process.env.PORT || 3000;
+
+try {
+    server.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+} catch (error) {
+    console.error('Server başlatılırken hata oluştu:', error);
+    process.exit(1);
+}
+
+// Yakalanmayan hataları da logla
+process.on('uncaughtException', (error) => {
+    console.error('Yakalanmayan hata:', error);
+});
+
+process.on('unhandledRejection', (error) => {
+    console.error('İşlenmeyen Promise hatası:', error);
+});

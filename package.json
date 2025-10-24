@@ -1,0 +1,35 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "VenomFaden",
+  "type": "commonjs",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/src/server.js",
+    "postbuild": "copyfiles -u 1 \"public/**/*\" dist/",
+    "clean": "rimraf dist",
+    "deploy": "npm run clean && npm run build"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1",
+    "ws": "^8.18.3",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.9.1",
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.9.1",
+    "@types/ws": "^8.18.1",
+    "copyfiles": "^2.4.1",
+    "rimraf": "^6.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

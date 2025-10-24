@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Chat Relay Viewer</title>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 1rem; }
+    #log { white-space: pre-wrap; background:#f7f7f7; padding:1rem; border:1px solid #ddd; height:60vh; overflow:auto }
+    #controls { margin-top:1rem }
+    input[type=text] { width: 60%; }
+  </style>
+</head>
+<body>
+  <h1>Chat Relay Viewer</h1>
+  <div id="status">Connecting...</div>
+  <div id="log"></div>
+
+  <div id="controls">
+    <input id="msg" type="text" placeholder='Message to upstream (will be sent as string)'>
+    <button id="send">Send to Upstream</button>
+    <br/><br/>
+    <input id="wsurl" type="text" placeholder="wss://... (upstream)" style="width:60%">
+    <button id="seturl">Set Upstream URL</button>
+  </div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const statusEl = document.getElementById('status');
+
+    function appendLog(...args) {
+      const line = args.map(x => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ');
+      logEl.textContent += line + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Explicitly connect to our Socket.IO server
+    const socket = io();
+
+    socket.on('connect', () => {
+      statusEl.textContent = 'Connected to relay server (socket id: ' + socket.id + ')';
+      appendLog('Connected to relay server.');
+    });
+
+    socket.on('message', (data) => {
+      appendLog('INCOMING:', data);
+    });
+
+    socket.on('status', (s) => {
+      appendLog('UPSTREAM STATUS:', s);
+    });
+
+    socket.on('disconnect', () => {
+      statusEl.textContent = 'Disconnected from relay server';
+      appendLog('Disconnected from relay server');
+    });
+
+    document.getElementById('send').addEventListener('click', () => {
+      const msg = document.getElementById('msg').value;
+      if (!msg) return;
+      socket.emit('send', msg);
+      appendLog('SENT TO UPSTREAM:', msg);
+    });
+
+    document.getElementById('seturl').addEventListener('click', () => {
+      const url = document.getElementById('wsurl').value;
+      if (!url) return;
+      socket.emit('set_ws_url', url);
+      appendLog('Requested upstream URL change:', url);
+    });
+  </script>
+</body>
+</html>
