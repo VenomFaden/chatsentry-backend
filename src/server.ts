@@ -3,10 +3,13 @@ import http from 'http';
 import path from 'path';
 import { Server as IOServer } from 'socket.io';
 import { Chat } from './components/chat/chat';
-
+import { MessageChecker } from './components/messagechecker/messagechecker';
 const app = express();
 const server = http.createServer(app);
 const io = new IOServer(server, { cors: { origin: '*' } });
+
+//wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false
+//{"event":"pusher:subscribe","data":{"auth":"","channel":"chatrooms.24833578.v2"}}
 
 // Serve the static frontend
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -16,12 +19,14 @@ io.on('connection', (socket) => {
 
     // 1. Her bağlanan socket için YENİ, ÖZEL bir chat objesi oluştur
     const chat = new Chat();
-
+    const messageChecker = new MessageChecker();
     // 2. Bu öze chat objesinin olaylarını SADECE bu socket'e yönlendir
     chat.onMessage = (data) => {
         // io.emit yerine socket.emit kullanarak SADECE bu istemciye gönder
-        socket.emit('message', data); // <-- DEĞİŞİKLİK
-        console.log(`Socket ${socket.id} için mesaj iletildi:`, data);
+        
+        //socket.emit('message', data); // <-- DEĞİŞİKLİK
+        messageChecker.checkMessage(chat);
+        //console.log(`Socket ${socket.id} için mesaj iletildi:`, data);
     };
 
     chat.onConnectionStatus = (status, error?) => {

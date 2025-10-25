@@ -42,6 +42,9 @@ class Chat {
             return false;
         }
     }
+    close() {
+        this.ws?.close();
+    }
     getConnectionState() {
         if (!this.ws)
             return 'Not initialized';

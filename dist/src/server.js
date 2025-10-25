@@ -13,13 +13,6 @@ const server = http_1.default.createServer(app);
 const io = new socket_io_1.Server(server, { cors: { origin: '*' } });
 // Serve the static frontend
 app.use(express_1.default.static(path_1.default.join(__dirname, '..', 'public')));
-// -----------------------------------------------------------------
-// ARTIK GLOBAL BİR 'chat' OBJESİ VE LİSTENER'LARI YOK
-// const chat = new Chat(); // <-- SİLİNDİ
-// const WS_URL = ...;      // <-- ARTIK GEREKLİ DEĞİL (İSTEMCİDEN GELECEK)
-// chat.onMessage = ...;    // <-- TAŞINDI
-// chat.onConnectionStatus = ...; // <-- TAŞINDI
-// -----------------------------------------------------------------
 io.on('connection', (socket) => {
     console.log('Frontend connected:', socket.id);
     // 1. Her bağlanan socket için YENİ, ÖZEL bir chat objesi oluştur
@@ -56,6 +49,7 @@ io.on('connection', (socket) => {
     // 5. İstemcinin bağlantısı koptuğunda, bu öze chat objesini de kapat
     socket.on('disconnect', () => {
         console.log('Frontend disconnected:', socket.id);
+        chat.close();
         // !! ÇOK ÖNEMLİ: Kaynak sızıntısını önlemek için bu chat'in bağlantısını kes
         // Not: .disconnect() metodunun adının bu olduğunu varsayıyorum.
         // Sizin Chat sınıfınızda bu metodun adı farklıysa (örn: .close()) onu kullanın.
