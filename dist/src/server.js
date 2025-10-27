@@ -8,20 +8,25 @@ const http_1 = __importDefault(require("http"));
 const path_1 = __importDefault(require("path"));
 const socket_io_1 = require("socket.io");
 const chat_1 = require("./components/chat/chat");
+const messagechecker_1 = require("./components/messagechecker/messagechecker");
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 const io = new socket_io_1.Server(server, { cors: { origin: '*' } });
+//wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false
+//{"event":"pusher:subscribe","data":{"auth":"","channel":"chatrooms.24833578.v2"}}
 // Serve the static frontend
 app.use(express_1.default.static(path_1.default.join(__dirname, '..', 'public')));
 io.on('connection', (socket) => {
     console.log('Frontend connected:', socket.id);
     // 1. Her bağlanan socket için YENİ, ÖZEL bir chat objesi oluştur
     const chat = new chat_1.Chat();
+    const messageChecker = new messagechecker_1.MessageChecker();
     // 2. Bu öze chat objesinin olaylarını SADECE bu socket'e yönlendir
     chat.onMessage = (data) => {
         // io.emit yerine socket.emit kullanarak SADECE bu istemciye gönder
-        socket.emit('message', data); // <-- DEĞİŞİKLİK
-        console.log(`Socket ${socket.id} için mesaj iletildi:`, data);
+        //socket.emit('message', data); // <-- DEĞİŞİKLİK
+        messageChecker.checkMessage(chat);
+        //console.log(`Socket ${socket.id} için mesaj iletildi:`, data);
     };
     chat.onConnectionStatus = (status, error) => {
         // io.emit yerine socket.emit kullanarak SADECE bu istemciye gönder

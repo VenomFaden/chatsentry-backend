@@ -5,6 +5,7 @@ export class Chat {
     private ws: WebSocket | null = null;
 
     constructor() {
+        
     }
 
     onMessage?: (data: any) => void;
